@@ -168,6 +168,12 @@
 
         <h2 id="titleModules" style="color:#94a3b8; font-weight:bold; margin: 30px 0 10px 0; width:100%; max-width:1100px;">MODULES & TECH</h2>
         <div class="shop-grid" id="shop-modules"></div>
+
+        <h2 id="titleTech" style="color:#fbbf24; font-weight:bold; margin: 30px 0 10px 0; width:100%; max-width:1100px;">TECH TREE</h2>
+        <div class="shop-grid" id="shop-tech"></div>
+
+        <h2 id="titleDrone" style="color:#0ea5e9; font-weight:bold; margin: 30px 0 10px 0; width:100%; max-width:1100px;">DRONE UPGRADES</h2>
+        <div class="shop-grid" id="shop-drone"></div>
     </div>
 </div>
 
@@ -182,7 +188,7 @@ var LANG = {
             auto: 'AUTO', start: 'START', resume: 'RESUME',
             // Shop
             shopTitle: 'SINGULARITY ENGINE', shopSubtitle: 'Spend Scrap & Void Essence.',
-            voidArtifacts: 'VOID ARTIFACTS', modulesTech: 'MODULES & TECH',
+            voidArtifacts: 'VOID ARTIFACTS', modulesTech: 'MODULES & TECH', techTree: 'TECH TREE', droneUpgrades: 'DRONE UPGRADES',
             owned: 'OWNED', buy: 'BUY', unlock: 'UNLOCK',
             // Skills
             skillStun: 'Global Stun (Q)', skillRepair: 'Purify / Repair (R)', skillOmega: 'OMEGA BLAST (Requires Core Lv.4)',
@@ -229,7 +235,12 @@ var LANG = {
             // Hazards
             hazardFlare: '⚠ SOLAR FLARE ⚠', hazardAcid: '⚠ ACID NEBULA ⚠', hazardGravity: '⚠ GRAVITY WELL ⚠',
             // Core descriptions
-            coreAutoGun: 'Auto-Gun', coreRegenShield: 'Regen Shield', coreOmega: 'OMEGA BLAST', coreAscension: 'ASCENSION'
+            coreAutoGun: 'Auto-Gun', coreRegenShield: 'Regen Shield', coreOmega: 'OMEGA BLAST', coreAscension: 'ASCENSION',
+            // Drone Upgrades
+            droneDmg: 'Drone Damage', droneMulti: 'Multishot', droneRepair: 'Auto-Repair',
+            descDroneDmg: '+5 Damage per level', descDroneMulti: '+2 Projectiles', descDroneRepair: 'Repair buildings on hover',
+            // Button text
+            x1: 'x1', x10: 'x10', max: 'MAX'
         },
         zh: {
             // UI 标签
@@ -237,7 +248,7 @@ var LANG = {
             auto: '自动', start: '开始', resume: '继续',
             // 商店
             shopTitle: '奇点引擎', shopSubtitle: '消耗废料和虚空精华',
-            voidArtifacts: '虚空神器', modulesTech: '模块与科技',
+            voidArtifacts: '虚空神器', modulesTech: '模块与科技', techTree: '科技树', droneUpgrades: '无人机升级',
             owned: '已拥有', buy: '购买', unlock: '解锁',
             // 技能
             skillStun: '全局眩晕 (Q)', skillRepair: '净化/修复 (R)', skillOmega: 'OMEGA冲击波 (需要核心4级)',
@@ -284,12 +295,83 @@ var LANG = {
             // 灾害
             hazardFlare: '⚠ 太阳耀斑 ⚠', hazardAcid: '⚠ 酸雾星云 ⚠', hazardGravity: '⚠ 重力井 ⚠',
             // 核心描述
-            coreAutoGun: '自动炮塔', coreRegenShield: '再生护盾', coreOmega: 'OMEGA冲击波', coreAscension: '飞升'
+            coreAutoGun: '自动炮塔', coreRegenShield: '再生护盾', coreOmega: 'OMEGA冲击波', coreAscension: '飞升',
+            // 无人机升级
+            droneDmg: '无人机伤害', droneMulti: '多重射击', droneRepair: '自动修复',
+            descDroneDmg: '每级+5伤害', descDroneMulti: '+2发射体', descDroneRepair: '悬停时修复建筑',
+            // 按钮文本
+            x1: 'x1', x10: 'x10', max: '最大'
         }
     }
 };
 
 function t(key) { return LANG.data[LANG.current][key] || key; }
+
+// Helper functions to map IDs to translation keys
+function getModuleNameKey(id) {
+    const map = {
+        'CORE': 'core', 'CONDUIT': 'conduit', 'WALL': 'titanium', 'TURRET': 'sentry',
+        'SHIELD': 'plasma', 'STABILIZER': 'stabilizer', 'OPTIMIZER': 'optimizer', 'FAB': 'fabricator',
+        'HUB': 'droneHub', 'ANCHOR': 'anchor', 'TESLA': 'tesla', 'VULCAN': 'vulcan',
+        'SNIPER': 'sniper', 'ICBM': 'icbm', 'RAIL': 'railgun', 'AMP': 'booster',
+        'ZEUS': 'titanZeus', 'ODIN': 'titanOdin', 'BLACKHOLE': 'titanVoid', 'KRONOS': 'titanKronos'
+    };
+    return map[id] || id;
+}
+
+function getModuleDescKey(id) {
+    const map = {
+        'CONDUIT': 'descPowerLine', 'WALL': 'descReflects', 'TURRET': 'descFastFire',
+        'SHIELD': 'descRegenShield', 'STABILIZER': 'descPreventsWeather', 'OPTIMIZER': 'descAutoUpgrades',
+        'FAB': 'descGeneratesScrap', 'HUB': 'descGlobalMining', 'ANCHOR': 'descPreventsRifts',
+        'TESLA': 'descChainLightning', 'VULCAN': 'descSpinUp', 'SNIPER': 'descAntiTank',
+        'ICBM': 'descGlobalNuke', 'RAIL': 'descInfinitePierce', 'AMP': 'descSpeedBuff',
+        'ZEUS': 'descMassiveChain', 'ODIN': 'descOrbitalRay', 'BLACKHOLE': 'descGravity', 'KRONOS': 'descSlowsBoosts'
+    };
+    return map[id] || '';
+}
+
+function getArtifactNameKey(id) {
+    const map = {
+        'LENS': 'artifactLens', 'PHASE': 'artifactPhase', 'GREED': 'artifactGreed',
+        'CRIT': 'artifactCrit', 'REGEN': 'artifactRegen'
+    };
+    return map[id] || id;
+}
+
+function getArtifactDescKey(id) {
+    const map = {
+        'LENS': 'descLens', 'PHASE': 'descPhase', 'GREED': 'descGreed',
+        'CRIT': 'descCrit', 'REGEN': 'descRegen'
+    };
+    return map[id] || '';
+}
+
+function getTechNameKey(id) {
+    const map = {
+        'NANO': 'techNano', 'AI': 'techAI', 'OVER': 'techOver',
+        'REFLECT': 'techReflect', 'LIMIT': 'techLimit', 'GATE': 'techGate'
+    };
+    return map[id] || id;
+}
+
+function getTechDescKey(id) {
+    const map = {
+        'NANO': 'descNano', 'AI': 'descAI', 'OVER': 'descOver',
+        'REFLECT': 'descReflect', 'LIMIT': 'descLimit', 'GATE': 'descGate'
+    };
+    return map[id] || '';
+}
+
+function getDroneNameKey(id) {
+    const map = { 'D_DMG': 'droneDmg', 'D_MULTI': 'droneMulti', 'D_REPAIR': 'droneRepair' };
+    return map[id] || id;
+}
+
+function getDroneDescKey(id) {
+    const map = { 'D_DMG': 'descDroneDmg', 'D_MULTI': 'descDroneMulti', 'D_REPAIR': 'descDroneRepair' };
+    return map[id] || '';
+}
 
 /** --- CONFIGURATION --- */
 var CFG = {
@@ -469,7 +551,7 @@ function handleCopy(e) {
         if(c && MODULES[c.id]) {
             G.sel = c.id;
             renderToolbar();
-            showToast("COPIED: " + c.def.name);
+            showToast(`${t('msgCopied')}: ${t(getModuleNameKey(c.id))}`);
         }
     }
 }
@@ -527,7 +609,7 @@ function handleTerraform() {
             G.scrap -= CFG.TERRAFORM_COST; G.terrain[G.mx][G.my] = TYPES.EMPTY;
             addPart(getCell(G.mx,G.my).x, getCell(G.mx,G.my).y, '#fff', 10);
             updateUI(); updateLogic();
-        } else showToast(`NEED ${CFG.TERRAFORM_COST} SCRAP`);
+        } else showToast(`${t('msgNeedScrap')}: ${CFG.TERRAFORM_COST}`);
     }
 }
 
@@ -577,7 +659,7 @@ function battleStep() {
         if(G.hazard === 2 && G.frame % 60 === 0) { // Acid
              for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) if(G.grid[x][y] && !G.stab[x][y]) damageTile(x,y,20);
         }
-        if(G.hazardTimer <= 0) { G.hazard=0; hw.style.display='none'; showToast("HAZARD CLEARED"); }
+        if(G.hazardTimer <= 0) { G.hazard=0; hw.style.display='none'; showToast(t('msgHazardCleared')); }
     } else if(G.wave > 5 && G.frame % 3600 === 0 && Math.random() > 0.6) {
         G.hazard = Math.floor(Math.random()*3)+1;
         G.hazardTimer = 1200; // 20s
@@ -857,47 +939,70 @@ function onMouseDown(e) {
         if(x<0||x>=CFG.W||y<0||y>=CFG.H) return;
         if(G.grid[x][y]?.id === 'CORE') { upgradeCore(); return; }
         if(e.ctrlKey) { if(G.grid[x][y]) globalUpgrade(G.grid[x][y].id); return; }
-        if(e.altKey && G.terrain[x][y]===TYPES.VOID) { if(G.scrap >= CFG.TERRAFORM_COST) { G.scrap -= CFG.TERRAFORM_COST; G.terrain[x][y] = TYPES.EMPTY; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); updateLogic(); updateUI(); } else showToast("NEED 500 SCRAP"); return; }
+        if(e.altKey && G.terrain[x][y]===TYPES.VOID) { if(G.scrap >= CFG.TERRAFORM_COST) { G.scrap -= CFG.TERRAFORM_COST; G.terrain[x][y] = TYPES.EMPTY; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); updateLogic(); updateUI(); } else showToast(`${t('msgNeedScrap')}: ${CFG.TERRAFORM_COST}`); return; }
         if(G.sel) { G.dragStart = {x, y}; tryBuild(x, y, e.shiftKey); }
     }
 }
-function globalUpgrade(id) { let def = MODULES[id]; let count = 0; for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) { let c = G.grid[x][y]; if(c && c.id === id) { let cost = Math.floor(def.cost * Math.pow(1.5, c.lvl||1)); if(G.scrap >= cost) { G.scrap -= cost; c.lvl = (c.lvl||1) + 1; c.hp = c.maxHp * Math.pow(1.5, c.lvl-1); addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 5); count++; } } } if(count > 0) { showToast(`UPGRADED ${count} ${def.name}S!`); updateUI(); } else showToast("NOT ENOUGH SCRAP"); }
-function tryBuild(x, y, isShift) { if(x<0||x>=CFG.W||y<0||y>=CFG.H) return; let def = MODULES[G.sel]; if(def.size === 2) { if(x+1>=CFG.W || y+1>=CFG.H) return; if(G.terrain[x][y]!==TYPES.EMPTY || G.terrain[x+1][y]!==TYPES.EMPTY || G.terrain[x][y+1]!==TYPES.EMPTY || G.terrain[x+1][y+1]!==TYPES.EMPTY) { showToast("BLOCKED"); return; } } else { if(G.terrain[x][y] !== TYPES.EMPTY) { showToast("BLOCKED"); return; } } if(!def.unlocked && def.id!=='CORE' && def.id!=='CONDUIT' && def.id!=='WALL' && def.id!=='TURRET') { showToast("LOCKED"); return; } let cost = Math.floor(def.cost); let existing = getStructureAt(x, y); if(existing && existing.id === G.sel) { let lvl = existing.lvl || 1; cost = Math.floor(def.cost * Math.pow(1.5, lvl)); if(G.scrap >= cost) { G.scrap -= cost; existing.lvl = lvl + 1; existing.hp = existing.maxHp * Math.pow(1.5, lvl); addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 10); } else showToast("NEED SCRAP: " + cost); } else { if(G.scrap >= cost) { G.scrap -= cost; if(existing) { G.scrap += MODULES[existing.id].cost/2; if(existing.def.size===2) { for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++) G.grid[existing.x+dx][existing.y+dy]=null; } else G.grid[x][y]=null; } let newStruct = { ...def, x:x, y:y, cd:0, hp:def.hp, maxHp:def.hp, shield:def.shield||0, maxShield:def.maxShield||0, lvl:1 }; if(def.size === 2) { for(let dx=0;dx<2;dx++) for(let dy=0;dy<2;dy++) G.grid[x+dx][y+dy] = newStruct; } else { G.grid[x][y] = newStruct; } addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 5); } else showToast("NEED SCRAP: " + cost); } updateLogic(); renderToolbar(); updateUI(); }
+function globalUpgrade(id) { let def = MODULES[id]; let count = 0; for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) { let c = G.grid[x][y]; if(c && c.id === id) { let cost = Math.floor(def.cost * Math.pow(1.5, c.lvl||1)); if(G.scrap >= cost) { G.scrap -= cost; c.lvl = (c.lvl||1) + 1; c.hp = c.maxHp * Math.pow(1.5, c.lvl-1); addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 5); count++; } } } if(count > 0) { showToast(`${t('msgUpgraded')} ${count} ${t(getModuleNameKey(id))}!`); updateUI(); } else showToast(t('msgNeedScrap')); }
+function tryBuild(x, y, isShift) { if(x<0||x>=CFG.W||y<0||y>=CFG.H) return; let def = MODULES[G.sel]; if(def.size === 2) { if(x+1>=CFG.W || y+1>=CFG.H) return; if(G.terrain[x][y]!==TYPES.EMPTY || G.terrain[x+1][y]!==TYPES.EMPTY || G.terrain[x][y+1]!==TYPES.EMPTY || G.terrain[x+1][y+1]!==TYPES.EMPTY) { showToast(t('msgBlocked')); return; } } else { if(G.terrain[x][y] !== TYPES.EMPTY) { showToast(t('msgBlocked')); return; } } if(!def.unlocked && def.id!=='CORE' && def.id!=='CONDUIT' && def.id!=='WALL' && def.id!=='TURRET') { showToast(t('msgLocked')); return; } let cost = Math.floor(def.cost); let existing = getStructureAt(x, y); if(existing && existing.id === G.sel) { let lvl = existing.lvl || 1; cost = Math.floor(def.cost * Math.pow(1.5, lvl)); if(G.scrap >= cost) { G.scrap -= cost; existing.lvl = lvl + 1; existing.hp = existing.maxHp * Math.pow(1.5, lvl); addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 10); } else showToast(`${t('msgNeedScrap')}: ${cost}`); } else { if(G.scrap >= cost) { G.scrap -= cost; if(existing) { G.scrap += MODULES[existing.id].cost/2; if(existing.def.size===2) { for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++) G.grid[existing.x+dx][existing.y+dy]=null; } else G.grid[x][y]=null; } let newStruct = { ...def, x:x, y:y, cd:0, hp:def.hp, maxHp:def.hp, shield:def.shield||0, maxShield:def.maxShield||0, lvl:1 }; if(def.size === 2) { for(let dx=0;dx<2;dx++) for(let dy=0;dy<2;dy++) G.grid[x+dx][y+dy] = newStruct; } else { G.grid[x][y] = newStruct; } addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 5); } else showToast(`${t('msgNeedScrap')}: ${cost}`); } updateLogic(); renderToolbar(); updateUI(); }
 function drawDragPreview() { if(G.dragStart && G.sel) { let def = MODULES[G.sel]; if(def && (def.id === 'WALL' || def.id === 'CONDUIT')) { let sx = G.dragStart.x, sy = G.dragStart.y; let ex = G.mx, ey = G.my; let dx = Math.abs(ex-sx), dy = Math.abs(ey-sy); let steps = Math.max(dx, dy); let count = 0; ctx.fillStyle = 'rgba(16, 185, 129, 0.4)'; for(let i=0; i<=steps; i++) { let t = i/steps || 0; let cx = Math.round(sx + (ex-sx)*t), cy = Math.round(sy + (ey-sy)*t); if(cx>=0 && cx<CFG.W && cy>=0 && cy<CFG.H) { ctx.fillRect(cx*CFG.SIZE+CFG.OFF_X, cy*CFG.SIZE+CFG.OFF_Y, CFG.SIZE, CFG.SIZE); count++; } } G.dragCost = count * def.cost; } else { ctx.fillStyle = 'rgba(16, 185, 129, 0.4)'; let sz = def.size || 1; ctx.fillRect(G.mx*CFG.SIZE+CFG.OFF_X, G.my*CFG.SIZE+CFG.OFF_Y, CFG.SIZE*sz, CFG.SIZE*sz); G.dragCost = def.cost; } } }
-function upgradeCore() { if(G.coreLvl >= 5) return; let cost = 1000 * Math.pow(2, G.coreLvl-1); if(G.scrap >= cost) { G.scrap -= cost; G.coreLvl++; for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) if(G.grid[x][y]?.id==='CORE') { G.grid[x][y].hp = 2000 * G.coreLvl; G.grid[x][y].maxHp = 2000 * G.coreLvl; addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 30); } showToast(`CORE UPGRADED TO Lv.${G.coreLvl}`); if(G.coreLvl === 3) showToast("CORE SHIELD ACTIVATED"); if(G.coreLvl === 4) { showToast("OMEGA SKILL UNLOCKED"); document.getElementById('skillOmega').classList.remove('disabled'); } if(G.coreLvl === 5) { G.ascensionTimer = CFG.ASCENSION_TIME; G.phase = 'BATTLE'; G.speed = 1; document.getElementById('ascension-alert').style.display = 'block'; document.getElementById('ascension-timer').style.display = 'block'; showToast("ASCENSION PROTOCOL INITIATED"); } updateUI(); } else { showToast("NEED SCRAP: " + cost); } }
+function upgradeCore() { if(G.coreLvl >= 5) return; let cost = 1000 * Math.pow(2, G.coreLvl-1); if(G.scrap >= cost) { G.scrap -= cost; G.coreLvl++; for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) if(G.grid[x][y]?.id==='CORE') { G.grid[x][y].hp = 2000 * G.coreLvl; G.grid[x][y].maxHp = 2000 * G.coreLvl; addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 30); } showToast(`${t('msgCoreUpgraded')}${G.coreLvl}`); if(G.coreLvl === 3) showToast(t('msgCoreShield')); if(G.coreLvl === 4) { showToast(t('msgOmegaUnlocked')); document.getElementById('skillOmega').classList.remove('disabled'); } if(G.coreLvl === 5) { G.ascensionTimer = CFG.ASCENSION_TIME; G.phase = 'BATTLE'; G.speed = 1; document.getElementById('ascension-alert').style.display = 'block'; document.getElementById('ascension-timer').style.display = 'block'; showToast(t('msgAscensionStart')); } updateUI(); } else { showToast(`${t('msgNeedScrap')}: ${cost}`); } }
 function onMouseUp(e) { if(!G.dragStart) return; let sx = G.dragStart.x, sy = G.dragStart.y; let ex = G.mx, ey = G.my; let def = MODULES[G.sel]; if(def && (def.id === 'WALL' || def.id === 'CONDUIT')) { let dx = Math.abs(ex-sx), dy = Math.abs(ey-sy); let steps = Math.max(dx, dy); for(let i=0; i<=steps; i++) { let t = i/steps || 0; let cx = Math.round(sx + (ex-sx)*t); let cy = Math.round(sy + (ey-sy)*t); tryBuild(cx, cy, false); } } else { tryBuild(ex, ey, e.shiftKey); } G.dragStart = null; G.dragCost = 0; }
 function updateUI() { document.getElementById('waveVal').innerText = G.wave + (G.infinite ? " (∞)" : ""); document.getElementById('hpVal').innerText = G.coreLvl; document.getElementById('scrapVal').innerText = Math.floor(G.scrap); document.getElementById('essenceVal').innerText = Math.floor(G.essence); }
-function renderToolbar() { const c = document.getElementById('toolbarContainer'); c.innerHTML = ''; Object.values(MODULES).forEach(m => { if(!m.unlocked) return; let el = document.createElement('div'); el.className = `tool-slot ${G.sel===m.id ? 'active':''}`; el.onclick = () => { G.sel = m.id; renderToolbar(); }; let iconStyle = ''; if(defShape(m.shape, iconStyle)) iconStyle=defShape(m.shape); el.innerHTML = `<div class="tool-cost">${m.cost}</div><div class="tool-icon-div" style="background:${m.color}; ${defShapeStyle(m.shape)}"></div><div class="tool-hotkey">${m.name.substr(0,3)}</div>${m.size===2?'<div class="titan-badge">TITAN</div>':''}`; c.appendChild(el); }); }
+function renderToolbar() { const c = document.getElementById('toolbarContainer'); c.innerHTML = ''; Object.values(MODULES).forEach(m => { if(!m.unlocked) return; let el = document.createElement('div'); el.className = `tool-slot ${G.sel===m.id ? 'active':''}`; el.onclick = () => { G.sel = m.id; renderToolbar(); }; let iconStyle = ''; if(defShape(m.shape, iconStyle)) iconStyle=defShape(m.shape); let translatedName = t(getModuleNameKey(m.id)); el.innerHTML = `<div class="tool-cost">${m.cost}</div><div class="tool-icon-div" style="background:${m.color}; ${defShapeStyle(m.shape)}"></div><div class="tool-hotkey">${translatedName.substr(0,3)}</div>${m.size===2?'<div class="titan-badge">TITAN</div>':''}`; c.appendChild(el); }); }
 function defShapeStyle(s) { if(s==='titan_zeus') return 'width:32px; height:32px; border:2px solid #38bdf8; transform: rotate(45deg);'; if(s==='titan_odin') return 'width:32px; height:32px; border:2px solid #be185d; border-radius:50%;'; if(s==='titan_blackhole') return 'width:32px; height:32px; border:2px solid #6b21a8; border-radius:50%;'; if(s==='titan_kronos') return 'width:32px; height:32px; border:2px solid #84cc16;'; if(s==='hexagon') return 'clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); width:20px; height:20px;'; if(s==='bolt') return 'width:6px; height:20px; background:#06b6d4; transform: skewX(-20deg);'; if(s==='minigun') return 'border:2px dashed #fff; width:20px; height:20px; border-radius:50%;'; if(s==='circle') return 'border-radius:50%'; if(s==='rect_small') return 'width:12px; height:12px;'; if(s==='triangle') return 'clip-path: polygon(50% 0%, 0% 100%, 100% 100%)'; if(s==='diamond') return 'transform: rotate(45deg); width:16px; height:16px'; if(s==='cross') return 'clip-path: polygon(20% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 80%, 80% 80%, 80% 100%, 20% 100%, 20% 80%, 0% 80%, 0% 20%, 20% 20%)'; if(s==='hub') return 'border:2px solid #fff; width:16px; height:16px;'; if(s==='shield') return 'border-radius:50%; border:2px solid #8b5cf6; background:transparent;'; if(s==='diamond_in_box') return 'border:2px solid #2dd4bf; width:20px; height:20px; transform: rotate(45deg);'; if(s==='cross_hollow') return 'border:2px solid #14b8a6; width:20px; height:20px; transform: rotate(45deg);'; return ''; }
 function defShape(s, i) { return false; }
-function updateShopUI() { 
-    document.getElementById('shopScrap').innerText = Math.floor(G.scrap); 
+function updateShopUI() {
+    document.getElementById('shopScrap').innerText = Math.floor(G.scrap);
     document.getElementById('shopEssence').innerText = Math.floor(G.essence);
-    const mg = document.getElementById('shop-modules'); mg.innerHTML = ''; 
-    Object.values(MODULES).forEach(m => { if(m.unlocked) return; let d = document.createElement('div'); d.className='shop-card'; d.innerHTML = `<div style="font-weight:bold; color:${m.color}">${m.name}</div><div style="font-size:12px; color:#94a3b8">${m.desc}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${m.unlockCost} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="unlockMod('${m.id}')">UNLOCK</button></div>`; mg.appendChild(d); }); 
+    const mg = document.getElementById('shop-modules'); mg.innerHTML = '';
+    Object.values(MODULES).forEach(m => {
+        if(m.unlocked) return;
+        let d = document.createElement('div');
+        d.className='shop-card';
+        let nameKey = getModuleNameKey(m.id);
+        let descKey = getModuleDescKey(m.id);
+        d.innerHTML = `<div style="font-weight:bold; color:${m.color}">${t(nameKey)}</div><div style="font-size:12px; color:#94a3b8">${t(descKey)}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${m.unlockCost} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="unlockMod('${m.id}')">${t('unlock')}</button></div>`;
+        mg.appendChild(d);
+    });
     const ag = document.getElementById('shop-artifacts'); ag.innerHTML = '';
     ARTIFACTS.forEach(a => {
         let owned = G.arts[a.id];
         let d = document.createElement('div'); d.className='shop-card';
         if(owned) d.style.border = '1px solid #a855f7';
-        d.innerHTML = `<div style="font-weight:bold; color:#d8b4fe">${a.name}</div><div style="font-size:12px; color:#94a3b8">${a.desc}</div><div style="margin-top:10px; font-weight:bold; color:#d8b4fe">${a.cost} ESSENCE</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyArt('${a.id}')">${owned?'OWNED':'BUY'}</button></div>`;
+        let nameKey = getArtifactNameKey(a.id);
+        let descKey = getArtifactDescKey(a.id);
+        d.innerHTML = `<div style="font-weight:bold; color:#d8b4fe">${t(nameKey)}</div><div style="font-size:12px; color:#94a3b8">${t(descKey)}</div><div style="margin-top:10px; font-weight:bold; color:#d8b4fe">${a.cost} ${t('essence').toUpperCase()}</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyArt('${a.id}')">${owned?t('owned'):t('buy')}</button></div>`;
         ag.appendChild(d);
     });
 
-    const tg = document.getElementById('shop-tech'); tg.innerHTML = ''; 
-    TECHS.forEach(t => { if(t.id==='GATE') return; let owned = G.tech[t.id] >= t.max; let d = document.createElement('div'); d.className='shop-card'; if(owned) d.style.opacity = 0.5; let base = Math.floor(t.cost * Math.pow(1.2, G.tech[t.id])); d.innerHTML = `<div style="font-weight:bold; color:#a855f7">${t.name}</div><div style="font-size:12px; color:#94a3b8">${t.desc}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${base} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyTech('${t.id}',1)">x1</button><button class="buy-opt-btn" onclick="buyTech('${t.id}',10)">x10</button><button class="buy-opt-btn" onclick="buyTech('${t.id}',999)">MAX</button></div>`; tg.appendChild(d); });
+    const tg = document.getElementById('shop-tech'); tg.innerHTML = '';
+    TECHS.forEach(t => {
+        if(t.id==='GATE') return;
+        let owned = G.tech[t.id] >= t.max;
+        let d = document.createElement('div');
+        d.className='shop-card';
+        if(owned) d.style.opacity = 0.5;
+        let base = Math.floor(t.cost * Math.pow(1.2, G.tech[t.id]));
+        let nameKey = getTechNameKey(t.id);
+        let descKey = getTechDescKey(t.id);
+        d.innerHTML = `<div style="font-weight:bold; color:#a855f7">${window.t(nameKey)}</div><div style="font-size:12px; color:#94a3b8">${window.t(descKey)}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${base} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyTech('${t.id}',1)">${window.t('x1')}</button><button class="buy-opt-btn" onclick="buyTech('${t.id}',10)">${window.t('x10')}</button><button class="buy-opt-btn" onclick="buyTech('${t.id}',999)">${window.t('max').toUpperCase()}</button></div>`;
+        tg.appendChild(d);
+    });
     const dg = document.getElementById('shop-drone'); dg.innerHTML = '';
     DRONE_UPGRADES.forEach(u => {
         let owned = G.droneTech[u.id] >= u.max;
         let d = document.createElement('div'); d.className='shop-card';
         if(owned) d.style.opacity = 0.5;
         let base = Math.floor(u.cost * Math.pow(1.2, G.droneTech[u.id]));
-        d.innerHTML = `<div style="font-weight:bold; color:#0ea5e9">${u.name}</div><div style="font-size:12px; color:#94a3b8">${u.desc}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${base} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',1)">x1</button><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',10)">x10</button><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',999)">MAX</button></div>`;
+        let nameKey = getDroneNameKey(u.id);
+        let descKey = getDroneDescKey(u.id);
+        d.innerHTML = `<div style="font-weight:bold; color:#0ea5e9">${window.t(nameKey)}</div><div style="font-size:12px; color:#94a3b8">${window.t(descKey)}</div><div style="margin-top:10px; font-weight:bold; color:#fbbf24">${base} ⚙️</div><div class="buy-opts"><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',1)">${window.t('x1')}</button><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',10)">${window.t('x10')}</button><button class="buy-opt-btn" onclick="buyDroneTech('${u.id}',999)">${window.t('max').toUpperCase()}</button></div>`;
         dg.appendChild(d);
     });
 }
 window.unlockMod = id => { let m = MODULES[id]; if(G.scrap>=m.unlockCost) { G.scrap-=m.unlockCost; m.unlocked=true; updateShopUI(); renderToolbar(); } };
-window.buyArt = id => { let a=ARTIFACTS.find(x=>x.id===id); if(G.essence>=a.cost && !G.arts[id]) { G.essence-=a.cost; G.arts[id]=1; updateShopUI(); showToast("ARTIFACT ACQUIRED!"); } };
+window.buyArt = id => { let a=ARTIFACTS.find(x=>x.id===id); if(G.essence>=a.cost && !G.arts[id]) { G.essence-=a.cost; G.arts[id]=1; updateShopUI(); showToast(t('msgArtifactAcquired')); } };
 window.buyTech = (id, n) => { 
     let t=TECHS.find(x=>x.id===id); 
     for(let i=0;i<n;i++) {
@@ -915,7 +1020,7 @@ window.buyTech = (id, n) => {
                      G.phase = 'BATTLE'; G.speed = 1;
                      document.getElementById('ascension-alert').style.display = 'block';
                      document.getElementById('ascension-timer').style.display = 'block';
-                     showToast("ASCENSION PROTOCOL INITIATED");
+                     showToast(t('msgAscensionStart'));
                  }
             }
         } else break;
@@ -1214,11 +1319,16 @@ function updateLanguage() {
     document.getElementById('btnResume').innerText = t('resume');
     document.getElementById('titleArtifacts').innerText = t('voidArtifacts');
     document.getElementById('titleModules').innerText = t('modulesTech');
+    document.getElementById('titleTech').innerText = t('techTree');
+    document.getElementById('titleDrone').innerText = t('droneUpgrades');
 
     // Update skill tooltips
     document.getElementById('skillStun').title = t('skillStun');
     document.getElementById('skillRepair').title = t('skillRepair');
     document.getElementById('skillOmega').title = t('skillOmega');
+
+    // Re-render toolbar to update building names
+    renderToolbar();
 
     // Re-render shop to update text
     if(document.getElementById('shop-overlay').style.display === 'flex') {
