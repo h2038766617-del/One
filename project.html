@@ -798,6 +798,11 @@ function updateUnits() {
             let angle = Math.atan2(G.mouseY - cp.y, G.mouseX - cp.x);
             fireRail(cp, angle, c.def.dmg * lvlMult * synDmg * limitBreak * crit, 2000, 15);
             drawBeam(cp, true, '#be185d', 10);
+            // Draw ODIN orbital beam to cursor
+            ctx.beginPath();
+            ctx.moveTo(cp.x, cp.y);
+            ctx.lineTo(G.mouseX, G.mouseY);
+            ctx.stroke();
             continue;
         }
         
@@ -838,7 +843,25 @@ function updateUnits() {
             } else {
                 getEnemiesInRadius(cp.x, cp.y, c.def.range * synRange).forEach(e => { if(Math.abs(e.y-cp.y)<20 && e.x>cp.x) { hasTarg = true; if(G.frame%5===0) dmgEnemy(e, dmg); } });
             }
-            if(hasTarg || G.frame%60<5) drawBeam(cp, c.id==='RAIL', isOverdrive ? '#fff' : c.def.color, c.lvl + (isOverdrive?5:0)); 
+            if(hasTarg || G.frame%60<5) {
+                drawBeam(cp, c.id==='RAIL', isOverdrive ? '#fff' : c.def.color, c.lvl + (isOverdrive?5:0));
+                // Draw actual beam visual
+                if(c.id === 'RAIL' && hasTarg) {
+                    let t = getTarget(c, cp, c.def.range * synRange);
+                    if(t) {
+                        ctx.beginPath();
+                        ctx.moveTo(cp.x, cp.y);
+                        ctx.lineTo(t.x, t.y);
+                        ctx.stroke();
+                    }
+                } else if(hasTarg) {
+                    // Draw horizontal laser beam
+                    ctx.beginPath();
+                    ctx.moveTo(cp.x, cp.y);
+                    ctx.lineTo(cp.x + c.def.range * synRange, cp.y);
+                    ctx.stroke();
+                }
+            } 
         } else {
             if(c.cd > 0) c.cd--;
             else {
@@ -1168,7 +1191,10 @@ function drawCursor() {
 
 function drawBeam(p, isRail, color, intensity) {
     intensity = intensity || 1;
-    ctx.strokeStyle = color || '#fff'; ctx.lineWidth = isRail ? 3 : 2; ctx.globalAlpha = 0.3 + (intensity * 0.1);
+    ctx.strokeStyle = color || '#fff';
+    ctx.lineWidth = isRail ? (3 + intensity) : 2;
+    ctx.globalAlpha = 0.3 + (intensity * 0.05);
+    // Note: Actual beam drawing happens in weapon update functions via ctx.stroke()
     ctx.globalAlpha = 1;
 }
 
