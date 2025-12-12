@@ -259,13 +259,13 @@ var WAVES = [
 
 var G = {
     grid: [], terrain: [], oreHp: {},
-    phase: 'PREPARE', 
+    phase: 'PREPARE',
     frame: 0, wave: 1, hp: CFG.BASE_HP, scrap: CFG.START_SCRAP, essence: 0,
-    enemies: [], projs: [], parts: [], texts: [], drones: [], rifts: [], deadZones: [], nests: [],
+    enemies: [], projs: [], parts: [], texts: [], drones: [], rifts: [], deadZones: [], nests: [], spawnQ: [],
     tech: { NANO:0, AI:0, OVER:0, GATE:0, REFLECT:0, LIMIT:0 },
     droneTech: { D_DMG:0, D_MULTI:0, D_REPAIR:0 },
     arts: { LENS:0, PHASE:0, GREED:0, CRIT:0, REGEN:0 },
-    sel: null, 
+    sel: null,
     pow: [], buf: [], path: [], syn: [], stab: [],
     speed: 1, shake: 0,
     mx:0, my:0, mouseX:0, mouseY:0,
@@ -745,7 +745,7 @@ function drawDragPreview() { if(G.dragStart && G.sel) { let def = MODULES[G.sel]
 function upgradeCore() { if(G.coreLvl >= 5) return; let cost = 1000 * Math.pow(2, G.coreLvl-1); if(G.scrap >= cost) { G.scrap -= cost; G.coreLvl++; for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) if(G.grid[x][y]?.id==='CORE') { G.grid[x][y].hp = 2000 * G.coreLvl; G.grid[x][y].maxHp = 2000 * G.coreLvl; addPart(getCell(x,y).x, getCell(x,y).y, '#fbbf24', 30); } showToast(`CORE UPGRADED TO Lv.${G.coreLvl}`); if(G.coreLvl === 3) showToast("CORE SHIELD ACTIVATED"); if(G.coreLvl === 4) { showToast("OMEGA SKILL UNLOCKED"); document.getElementById('skillOmega').classList.remove('disabled'); } if(G.coreLvl === 5) { G.ascensionTimer = CFG.ASCENSION_TIME; G.phase = 'BATTLE'; G.speed = 1; document.getElementById('ascension-alert').style.display = 'block'; document.getElementById('ascension-timer').style.display = 'block'; showToast("ASCENSION PROTOCOL INITIATED"); } updateUI(); } else { showToast("NEED SCRAP: " + cost); } }
 function onMouseUp(e) { if(!G.dragStart) return; let sx = G.dragStart.x, sy = G.dragStart.y; let ex = G.mx, ey = G.my; let def = MODULES[G.sel]; if(def && (def.id === 'WALL' || def.id === 'CONDUIT')) { let dx = Math.abs(ex-sx), dy = Math.abs(ey-sy); let steps = Math.max(dx, dy); for(let i=0; i<=steps; i++) { let t = i/steps || 0; let cx = Math.round(sx + (ex-sx)*t); let cy = Math.round(sy + (ey-sy)*t); tryBuild(cx, cy, false); } } else { tryBuild(ex, ey, e.shiftKey); } G.dragStart = null; G.dragCost = 0; }
 function updateUI() { document.getElementById('waveVal').innerText = G.wave + (G.infinite ? " (∞)" : ""); document.getElementById('hpVal').innerText = G.coreLvl; document.getElementById('scrapVal').innerText = Math.floor(G.scrap); document.getElementById('essenceVal').innerText = Math.floor(G.essence); }
-function renderToolbar() { const c = document.getElementById('inventoryContainer'); c.innerHTML = ''; Object.values(MODULES).forEach(m => { if(!m.unlocked) return; let el = document.createElement('div'); el.className = `tool-slot ${G.sel===m.id ? 'active':''}`; el.onclick = () => { G.sel = m.id; renderToolbar(); }; let iconStyle = ''; if(defShape(m.shape, iconStyle)) iconStyle=defShape(m.shape); el.innerHTML = `<div class="tool-cost">${m.cost}</div><div class="tool-icon-div" style="background:${m.color}; ${defShapeStyle(m.shape)}"></div><div class="tool-hotkey">${m.name.substr(0,3)}</div>${m.size===2?'<div class="titan-badge">TITAN</div>':''}`; c.appendChild(el); }); }
+function renderToolbar() { const c = document.getElementById('toolbarContainer'); c.innerHTML = ''; Object.values(MODULES).forEach(m => { if(!m.unlocked) return; let el = document.createElement('div'); el.className = `tool-slot ${G.sel===m.id ? 'active':''}`; el.onclick = () => { G.sel = m.id; renderToolbar(); }; let iconStyle = ''; if(defShape(m.shape, iconStyle)) iconStyle=defShape(m.shape); el.innerHTML = `<div class="tool-cost">${m.cost}</div><div class="tool-icon-div" style="background:${m.color}; ${defShapeStyle(m.shape)}"></div><div class="tool-hotkey">${m.name.substr(0,3)}</div>${m.size===2?'<div class="titan-badge">TITAN</div>':''}`; c.appendChild(el); }); }
 function defShapeStyle(s) { if(s==='titan_zeus') return 'width:32px; height:32px; border:2px solid #38bdf8; transform: rotate(45deg);'; if(s==='titan_odin') return 'width:32px; height:32px; border:2px solid #be185d; border-radius:50%;'; if(s==='titan_blackhole') return 'width:32px; height:32px; border:2px solid #6b21a8; border-radius:50%;'; if(s==='titan_kronos') return 'width:32px; height:32px; border:2px solid #84cc16;'; if(s==='hexagon') return 'clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); width:20px; height:20px;'; if(s==='bolt') return 'width:6px; height:20px; background:#06b6d4; transform: skewX(-20deg);'; if(s==='minigun') return 'border:2px dashed #fff; width:20px; height:20px; border-radius:50%;'; if(s==='circle') return 'border-radius:50%'; if(s==='rect_small') return 'width:12px; height:12px;'; if(s==='triangle') return 'clip-path: polygon(50% 0%, 0% 100%, 100% 100%)'; if(s==='diamond') return 'transform: rotate(45deg); width:16px; height:16px'; if(s==='cross') return 'clip-path: polygon(20% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 80%, 80% 80%, 80% 100%, 20% 100%, 20% 80%, 0% 80%, 0% 20%, 20% 20%)'; if(s==='hub') return 'border:2px solid #fff; width:16px; height:16px;'; if(s==='shield') return 'border-radius:50%; border:2px solid #8b5cf6; background:transparent;'; if(s==='diamond_in_box') return 'border:2px solid #2dd4bf; width:20px; height:20px; transform: rotate(45deg);'; if(s==='cross_hollow') return 'border:2px solid #14b8a6; width:20px; height:20px; transform: rotate(45deg);'; return ''; }
 function defShape(s, i) { return false; }
 function updateShopUI() { 
@@ -839,6 +839,234 @@ function drawCommander() {
 function updateLogic() { G.pow = Array(CFG.W).fill().map(()=>Array(CFG.H).fill(false)); G.buf = Array(CFG.W).fill().map(()=>Array(CFG.H).fill(1)); let q = []; G.grid.forEach((col, x) => col.forEach((c, y) => { if(c && c.type==='source') { G.pow[x][y]=true; q.push({x,y}); } })); while(q.length) { let {x,y} = q.shift(); [[0,1],[0,-1],[1,0],[-1,0]].forEach(d => { let nx=x+d[0], ny=y+d[1]; if(nx>=0 && nx<CFG.W && ny>=0 && ny<CFG.H) { let c = G.grid[nx][ny]; if(c && !G.pow[nx][ny] && (c.type==='wire' || c.type!=='source')) { if(c.type==='wire') { G.pow[nx][ny]=true; q.push({x:nx, y:ny}); } else G.pow[nx][ny]=true; } } }); } G.grid.forEach((col, x) => col.forEach((c, y) => { if(c) { c.synBuff = null; if(c.def.isLaser) { let hasAdj = [[0,1],[0,-1],[1,0],[-1,0]].some(d => { let n = G.grid[x+d[0]]?.[y+d[1]]; return n && n.def.isLaser; }); if(hasAdj) c.synBuff = 'DMG'; } if(c.id === 'WALL') { let hasAdj = [[0,1],[0,-1],[1,0],[-1,0]].some(d => { let n = G.grid[x+d[0]]?.[y+d[1]]; return n && n.id === 'SHIELD'; }); if(hasAdj) c.synBuff = 'ARMOR'; } if(c.id === 'SNIPER' || c.id === 'ICBM') { let partner = c.id==='SNIPER'?'ICBM':'SNIPER'; let hasAdj = [[0,1],[0,-1],[1,0],[-1,0]].some(d => { let n = G.grid[x+d[0]]?.[y+d[1]]; return n && n.id === partner; }); if(hasAdj) c.synBuff = 'RANGE'; } } if(c && c.type==='buff' && G.pow[x][y]) { [[0,1],[0,-1],[1,0],[-1,0]].forEach(d => { let nx=x+d[0], ny=y+d[1]; if(nx>=0 && nx<CFG.W && ny>=0 && ny<CFG.H) G.buf[nx][ny] *= 2; }); } })); 
 G.stab = Array(CFG.W).fill().map(()=>Array(CFG.H).fill(false)); G.grid.forEach((col, x) => col.forEach((c, y) => { if(c && c.id==='STABILIZER' && G.pow[x][y]) { let r = c.def.range; for(let dx=-r; dx<=r; dx++) for(let dy=-r; dy<=r; dy++) { if(x+dx>=0 && x+dx<CFG.W && y+dy>=0 && y+dy<CFG.H) G.stab[x+dx][y+dy] = true; } } }));
 calcPaths(); }
+
+// === MISSING RENDERING FUNCTIONS ===
+function updateVis() {
+    // Update visibility (placeholder for fog of war, if needed)
+}
+
+function drawGrid() {
+    for(let x=0; x<CFG.W; x++) {
+        for(let y=0; y<CFG.H; y++) {
+            let gx = x*CFG.SIZE + CFG.OFF_X, gy = y*CFG.SIZE + CFG.OFF_Y;
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(gx, gy, CFG.SIZE, CFG.SIZE);
+            let t = G.terrain[x][y];
+            if(t === TYPES.ORE) {
+                ctx.fillStyle = '#78716c'; ctx.fillRect(gx+4, gy+4, CFG.SIZE-8, CFG.SIZE-8);
+                let hp = G.oreHp[`${x},${y}`] || 0;
+                if(hp > 0) { ctx.fillStyle = '#a8a29e'; ctx.font = '10px monospace'; ctx.fillText(hp, gx+CFG.SIZE/2-8, gy+CFG.SIZE/2+4); }
+            } else if(t === TYPES.VOID) { ctx.fillStyle = '#581c87'; ctx.fillRect(gx+2, gy+2, CFG.SIZE-4, CFG.SIZE-4); }
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.strokeRect(gx, gy, CFG.SIZE, CFG.SIZE);
+        }
+    }
+}
+
+function drawCons() {
+    for(let x=0; x<CFG.W; x++) {
+        for(let y=0; y<CFG.H; y++) {
+            let c = G.grid[x][y];
+            if(!c || c.x !== x || c.y !== y) continue;
+            let gx = x*CFG.SIZE + CFG.OFF_X, gy = y*CFG.SIZE + CFG.OFF_Y, sz = c.def.size || 1;
+            ctx.fillStyle = c.corrupted ? '#a855f7' : c.color;
+            if(!G.pow[x][y] && c.type !== 'source') ctx.fillStyle = '#334155';
+            ctx.fillRect(gx+2, gy+2, sz*CFG.SIZE-4, sz*CFG.SIZE-4);
+            let maxHp = c.maxHp * Math.pow(1.5, (c.lvl||1)-1), hpPct = Math.max(0, Math.min(1, c.hp / maxHp));
+            if(hpPct < 1) {
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(gx+4, gy-8, sz*CFG.SIZE-8, 4);
+                ctx.fillStyle = hpPct > 0.5 ? '#10b981' : (hpPct > 0.25 ? '#f59e0b' : '#ef4444');
+                ctx.fillRect(gx+4, gy-8, (sz*CFG.SIZE-8)*hpPct, 4);
+            }
+            if(c.shield > 0) {
+                let maxShield = c.maxShield * Math.pow(1.5, (c.lvl||1)-1), shieldPct = Math.max(0, Math.min(1, c.shield / maxShield));
+                ctx.fillStyle = '#8b5cf6'; ctx.fillRect(gx+4, gy-12, (sz*CFG.SIZE-8)*shieldPct, 3);
+            }
+            if(c.lvl && c.lvl > 1) { ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 10px monospace'; ctx.fillText('Lv'+c.lvl, gx+4, gy+12); }
+            if(c.type === 'source') { ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText('⚡', gx+sz*CFG.SIZE/2, gy+sz*CFG.SIZE/2+5); ctx.textAlign = 'left'; }
+            if(c.synBuff) { ctx.fillStyle = '#22c55e'; ctx.font = '8px monospace'; ctx.fillText(c.synBuff, gx+sz*CFG.SIZE-20, gy+sz*CFG.SIZE-2); }
+            if(c.corrupted) { ctx.fillStyle = 'rgba(168, 85, 247, 0.3)'; ctx.fillRect(gx, gy, sz*CFG.SIZE, sz*CFG.SIZE); }
+        }
+    }
+}
+
+function drawEnts() {
+    G.enemies.forEach(e => {
+        ctx.fillStyle = e.col || '#ef4444'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r || 8, 0, Math.PI*2); ctx.fill();
+        if(e.hp < e.mhp) {
+            let hpPct = e.hp / e.mhp;
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(e.x-10, e.y-e.r-8, 20, 3);
+            ctx.fillStyle = hpPct > 0.5 ? '#10b981' : '#ef4444'; ctx.fillRect(e.x-10, e.y-e.r-8, 20*hpPct, 3);
+        }
+        if(e.boss) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, Math.PI*2); ctx.stroke(); }
+        if(e.mut && e.mut.includes('SHIELD') && e.shields > 0) { ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 2, 0, Math.PI*2); ctx.stroke(); }
+    });
+    G.projs.forEach(p => { ctx.fillStyle = p.col || '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill(); });
+    G.drones.forEach(d => { ctx.fillStyle = '#0ea5e9'; ctx.fillRect(d.x-3, d.y-3, 6, 6); });
+    G.rifts.forEach(r => { let pos = getCell(r.x, r.y); ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pos.x, pos.y, 20 + Math.sin(G.frame*0.1)*5, 0, Math.PI*2); ctx.stroke(); });
+    G.nests.forEach(n => { let pos = getCell(n.x, n.y); ctx.fillStyle = '#dc2626'; ctx.fillRect(pos.x-15, pos.y-15, 30, 30); ctx.fillStyle = '#fff'; ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.fillText(Math.floor(n.hp), pos.x, pos.y+4); ctx.textAlign = 'left'; });
+    G.deadZones.forEach(z => { ctx.fillStyle = 'rgba(85, 85, 85, 0.3)'; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); ctx.fill(); });
+}
+
+function drawFX() {
+    for(let i=G.parts.length-1; i>=0; i--) {
+        let p = G.parts[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
+        if(p.life <= 0) { G.parts.splice(i, 1); continue; }
+        ctx.fillStyle = p.col; ctx.globalAlpha = p.life; ctx.fillRect(p.x-2, p.y-2, 4, 4); ctx.globalAlpha = 1;
+    }
+    for(let i=G.texts.length-1; i>=0; i--) {
+        let t = G.texts[i];
+        t.y -= 1; t.life -= 0.015;
+        if(t.life <= 0) { G.texts.splice(i, 1); continue; }
+        ctx.fillStyle = t.col || '#fff'; ctx.font = 'bold 14px monospace'; ctx.globalAlpha = t.life; ctx.textAlign = 'center'; ctx.fillText(t.text, t.x, t.y); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+    }
+}
+
+function drawCursor() {
+    if(G.phase === 'PREPARE' && G.sel) {
+        let def = MODULES[G.sel];
+        if(def && G.mx >= 0 && G.mx < CFG.W && G.my >= 0 && G.my < CFG.H) {
+            let sz = def.size || 1;
+            ctx.strokeStyle = G.scrap >= def.cost ? '#10b981' : '#ef4444'; ctx.lineWidth = 2;
+            ctx.strokeRect(G.mx*CFG.SIZE+CFG.OFF_X, G.my*CFG.SIZE+CFG.OFF_Y, sz*CFG.SIZE, sz*CFG.SIZE);
+        }
+    }
+}
+
+function drawBeam(p, isRail, color, intensity) {
+    intensity = intensity || 1;
+    ctx.strokeStyle = color || '#fff'; ctx.lineWidth = isRail ? 3 : 2; ctx.globalAlpha = 0.3 + (intensity * 0.1);
+    ctx.globalAlpha = 1;
+}
+
+// === MISSING GAME LOGIC FUNCTIONS ===
+window.startWave = function() {
+    if(G.phase !== 'PREPARE') return;
+    G.phase = 'BATTLE'; G.frame = 0; G.spawnQ = [];
+    if(G.wave > WAVES.length) {
+        G.infinite = true;
+        let count = 50 + (G.wave - WAVES.length) * 10;
+        let types = ['BASIC', 'FAST', 'TANK', 'FLYER', 'SAPPER', 'DISRUPTOR', 'PHANTOM'];
+        for(let i=0; i<count; i++) G.spawnQ.push(types[Math.floor(Math.random() * types.length)]);
+        if((G.wave - WAVES.length) % 3 === 0) { for(let i=0; i<2; i++) G.spawnQ.push('BOSS'); }
+    } else {
+        let wave = WAVES[G.wave - 1];
+        for(let i=0; i<wave.n; i++) {
+            let type = wave.t[Math.floor(Math.random() * wave.t.length)];
+            G.spawnQ.push(type);
+        }
+    }
+    document.getElementById('waveBtn').innerText = 'WAVE ' + G.wave;
+    document.getElementById('waveBtn').classList.add('btn-call');
+    updateUI();
+}
+
+function endWave() {
+    if(G.phase !== 'BATTLE') return;
+    G.phase = 'PREPARE'; G.wave++;
+    let bonus = CFG.RUSH_BONUS; G.scrap += bonus;
+    if(G.arts.GREED) {
+        let interest = Math.min(10000, Math.floor(G.scrap * 0.1));
+        G.scrap += interest; showToast(`INTEREST: +${interest} SCRAP`);
+    }
+    showToast(`WAVE ${G.wave-1} COMPLETE! +${bonus} SCRAP`);
+    document.getElementById('waveBtn').innerText = 'START';
+    document.getElementById('waveBtn').classList.remove('btn-call');
+    document.getElementById('shop-overlay').style.display = 'flex';
+    updateShopUI(); updateUI();
+    if(G.auto && G.wave <= WAVES.length) { setTimeout(() => { closeShop(); startWave(); }, 3000); }
+}
+
+function spawnEnemy(type, x, y) {
+    let types = {
+        BASIC: { hp:50, spd:1.5, dmg:10, r:8, col:'#ef4444' },
+        FAST: { hp:30, spd:3, dmg:8, r:6, col:'#f97316' },
+        TANK: { hp:300, spd:0.8, dmg:20, r:12, col:'#64748b', type:'TANK' },
+        FLYER: { hp:40, spd:2, dmg:5, r:7, col:'#06b6d4', fly:true },
+        SAPPER: { hp:20, spd:2.5, dmg:50, r:6, col:'#84cc16', sapper:true },
+        BOSS: { hp:2000, spd:1, dmg:30, r:20, col:'#dc2626', boss:true },
+        DISRUPTOR: { hp:80, spd:1.5, dmg:12, r:9, col:'#555', isDisruptor:true },
+        PHANTOM: { hp:60, spd:2, dmg:10, r:8, col:'#c084fc', type:'PHANTOM', isPhantom:true },
+        ERASER: { hp:150, spd:1, dmg:20, r:10, col:'#000', isEraser:true },
+        STALKER: { hp:100, spd:2.5, dmg:15, r:7, col:'#6b21a8' },
+        CORRUPTOR: { hp:120, spd:1.8, dmg:10, r:9, col:'#a855f7', isCorruptor:true }
+    };
+    let def = types[type] || types.BASIC;
+    let scale = 1 + (G.wave * 0.1);
+    if(G.infinite) scale = 1 + ((G.wave - WAVES.length) * 0.15);
+    let spawnX, spawnY;
+    if(x !== undefined && y !== undefined) {
+        let pos = getCell(x, y); spawnX = pos.x; spawnY = pos.y;
+    } else { spawnX = CFG.W * CFG.SIZE + CFG.OFF_X + 20; spawnY = Math.random() * CFG.H * CFG.SIZE + CFG.OFF_Y; }
+    let enemy = {
+        x: spawnX, y: spawnY, hp: def.hp * scale, mhp: def.hp * scale, speed: def.spd, dmg: def.dmg * scale, r: def.r, col: def.col,
+        fly: def.fly || false, boss: def.boss || false, sapper: def.sapper || false, isDisruptor: def.isDisruptor || false,
+        isPhantom: def.isPhantom || false, isEraser: def.isEraser || false, isCorruptor: def.isCorruptor || false,
+        type: def.type || 'normal', mut: [], shields: 0, bossPhase: false
+    };
+    if(Math.random() < 0.1) enemy.mut.push('REGEN');
+    if(Math.random() < 0.05) { enemy.mut.push('SHIELD'); enemy.shields = 3; }
+    if(Math.random() < 0.08 && enemy.r > 6) enemy.mut.push('SPLIT');
+    G.enemies.push(enemy);
+}
+
+function spawnNest() {
+    let x, y, tries = 0;
+    do {
+        x = Math.floor(Math.random() * CFG.W); y = Math.floor(Math.random() * CFG.H); tries++;
+    } while((getStructureAt(x, y) || G.terrain[x][y] !== TYPES.EMPTY || dist(getCell(x,y), getClosestCore()) < 200) && tries < 50);
+    if(tries < 50) {
+        let types = ['BASIC', 'FAST', 'SAPPER', 'DISRUPTOR'];
+        G.nests.push({ x: x, y: y, hp: 500, maxHp: 500, rate: 120, type: types[Math.floor(Math.random() * types.length)] });
+        showToast("ENEMY NEST SPAWNED!");
+    }
+}
+
+function addFloatingText(text, x, y, color) { floatText({x:x, y:y}, text, color); }
+function createExplosion(x, y, color, n) { explode(x, y, 50, 0, color); }
+
+window.useSkill = function(id) {
+    let skill = SKILLS[id];
+    if(!skill) return;
+    if(skill.active > 0) { showToast("SKILL ON COOLDOWN"); return; }
+    if(id === 'OMEGA' && G.coreLvl < 4) { showToast("REQUIRES CORE LV.4"); return; }
+    if(G.scrap < skill.cost) { showToast(`NEED ${skill.cost} SCRAP`); return; }
+    G.scrap -= skill.cost; skill.active = skill.cd;
+    if(id === 'STUN') { showToast("⚡ EMP ACTIVATED!"); G.shake = 15; addPart(CFG.W*CFG.SIZE/2 + CFG.OFF_X, CFG.H*CFG.SIZE/2 + CFG.OFF_Y, '#38bdf8', 30); }
+    else if(id === 'REPAIR') {
+        showToast("✨ NANO-BURST!"); let count = 0;
+        for(let x=0; x<CFG.W; x++) { for(let y=0; y<CFG.H; y++) { let c = G.grid[x][y]; if(c && c.corrupted) { c.corrupted = false; c.color = c.def.color; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); count++; } } }
+        if(count === 0) showToast("NO CORRUPTED BUILDINGS");
+    } else if(id === 'OMEGA') {
+        showToast("☢️ OMEGA BLAST!"); G.shake = 30; let core = getClosestCore();
+        if(core) { explode(core.x, core.y, 400, 500, '#fbbf24'); getEnemiesInRadius(core.x, core.y, 400).forEach(e => { dmgEnemy(e, 500); }); }
+    }
+    updateUI(); updateSkillUI();
+}
+
+function updateSkillUI() {
+    for(let id in SKILLS) {
+        let s = SKILLS[id]; let cdEl = document.getElementById(`cd-${id}`);
+        if(cdEl) { let pct = (s.active / s.cd) * 100; cdEl.style.height = pct + '%'; }
+    }
+}
+
+function onRightClick(e) {
+    let x = G.mx, y = G.my;
+    if(x < 0 || x >= CFG.W || y < 0 || y >= CFG.H) return;
+    let c = getStructureAt(x, y);
+    if(c && G.phase === 'PREPARE') {
+        let refund = Math.floor(c.def.cost * 0.5); G.scrap += refund;
+        if(c.def.size === 2) { for(let dx=0; dx<2; dx++) { for(let dy=0; dy<2; dy++) { if(c.x+dx < CFG.W && c.y+dy < CFG.H) G.grid[c.x+dx][c.y+dy] = null; } } }
+        else G.grid[x][y] = null;
+        updateLogic(); updateUI(); showToast(`SOLD: +${refund} SCRAP`);
+    } else if(c && G.phase === 'BATTLE') {
+        let key = `${x},${y}`;
+        if(G.autoOverdriveMap[key]) { delete G.autoOverdriveMap[key]; showToast("OVERDRIVE OFF"); }
+        else { G.autoOverdriveMap[key] = true; showToast("OVERDRIVE ON (5 SCRAP/sec)"); }
+    }
+}
+
+setInterval(() => { for(let id in SKILLS) { let s = SKILLS[id]; if(s.active > 0) { s.active--; updateSkillUI(); } } }, 1000/60);
 
 init();
 </script>
