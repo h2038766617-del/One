@@ -102,18 +102,18 @@
     <div class="ui-layer">
         <div class="ui-top">
             <div class="panel">
-                <div class="stat-box"><div class="stat-label">WAVE</div><div class="stat-val" id="waveVal">1</div></div>
+                <div class="stat-box"><div class="stat-label" id="labelWave">WAVE</div><div class="stat-val" id="waveVal">1</div></div>
                 <div style="width:1px; height:30px; background:#334155"></div>
-                <div class="stat-box"><div class="stat-label">CORE Lv</div><div class="stat-val" id="hpVal" style="color:#fbbf24">1</div></div>
+                <div class="stat-box"><div class="stat-label" id="labelCoreLv">CORE Lv</div><div class="stat-val" id="hpVal" style="color:#fbbf24">1</div></div>
                 <div style="width:1px; height:30px; background:#334155"></div>
-                <div class="stat-box"><div class="stat-label">SCRAP</div><div class="stat-val" id="scrapVal" style="color:#fbbf24">0</div></div>
+                <div class="stat-box"><div class="stat-label" id="labelScrap">SCRAP</div><div class="stat-val" id="scrapVal" style="color:#fbbf24">0</div></div>
                 <div style="width:1px; height:30px; background:#334155"></div>
-                <div class="stat-box"><div class="stat-label" style="color:#d8b4fe">ESSENCE</div><div class="stat-val" id="essenceVal" style="color:#d8b4fe">0</div></div>
+                <div class="stat-box"><div class="stat-label" id="labelEssence" style="color:#d8b4fe">ESSENCE</div><div class="stat-val" id="essenceVal" style="color:#d8b4fe">0</div></div>
             </div>
 
             <div class="panel" id="stargatePanel" style="display:none; flex-direction:column; align-items:flex-start; min-width: 180px;">
                 <div style="font-size:10px; font-weight:bold; color:#ec4899; width:100%; display:flex; justify-content:space-between;">
-                    <span>ASCENSION</span>
+                    <span id="labelAscension">ASCENSION</span>
                     <span id="sgPercent">0%</span>
                 </div>
                 <div class="sg-progress"><div class="sg-fill" id="sgFill"></div></div>
@@ -129,11 +129,12 @@
                 <div class="skill-icon disabled" id="skillOmega" onclick="useSkill('OMEGA')" title="OMEGA BLAST (Requires Core Lv.4)">
                     ☢️<div class="skill-key">SPC</div><div class="skill-cd" id="cd-OMEGA"></div>
                 </div>
-                
+
                 <div style="width:1px; height:30px; background:#334155"></div>
+                <button id="langBtn" class="btn" style="width:60px; padding:0; background:#6366f1;" onclick="toggleLanguage()">EN</button>
                 <div class="toggle-switch" onclick="toggleAuto()" title="Auto Next Wave">
                     <div class="toggle-track" id="autoTrack"><div class="toggle-knob"></div></div>
-                    <span style="font-size:12px; font-weight:bold; color:#cbd5e1">AUTO</span>
+                    <span id="autoLabel" style="font-size:12px; font-weight:bold; color:#cbd5e1">AUTO</span>
                 </div>
                 <button id="speedBtn" class="btn" style="width:60px; padding:0;" onclick="toggleSpeed()">1x</button>
                 <button id="waveBtn" class="btn">START</button>
@@ -152,28 +153,147 @@
     <div id="shop-overlay">
         <div style="display:flex; justify-content:space-between; width:100%; max-width:1100px; margin-bottom:30px; align-items:center;">
             <div>
-                <h1 style="color:white; font-size:40px; font-weight:900; letter-spacing:-2px;">SINGULARITY ENGINE</h1>
-                <p style="color:#94a3b8; font-size:14px;">Spend Scrap & Void Essence.</p>
+                <h1 id="shopTitle" style="color:white; font-size:40px; font-weight:900; letter-spacing:-2px;">SINGULARITY ENGINE</h1>
+                <p id="shopSubtitle" style="color:#94a3b8; font-size:14px;">Spend Scrap & Void Essence.</p>
             </div>
             <div style="text-align:right;">
-                <div style="color:#d8b4fe; font-size:20px; font-weight:bold;"><span id="shopEssence">0</span> ESSENCE</div>
-                <div style="color:#fbbf24; font-size:24px; font-weight:bold;"><span id="shopScrap">0</span> SCRAP</div>
-                <button class="btn" style="background:#10b981; margin-top:10px;" onclick="closeShop()">RESUME</button>
+                <div style="color:#d8b4fe; font-size:20px; font-weight:bold;"><span id="shopEssence">0</span> <span id="labelShopEssence">ESSENCE</span></div>
+                <div style="color:#fbbf24; font-size:24px; font-weight:bold;"><span id="shopScrap">0</span> <span id="labelShopScrap">SCRAP</span></div>
+                <button class="btn" id="btnResume" style="background:#10b981; margin-top:10px;" onclick="closeShop()">RESUME</button>
             </div>
         </div>
-        
-        <h2 style="color:#d8b4fe; font-weight:bold; margin: 10px 0; width:100%; max-width:1100px; text-shadow:0 0 10px #a855f7;">VOID ARTIFACTS</h2>
+
+        <h2 id="titleArtifacts" style="color:#d8b4fe; font-weight:bold; margin: 10px 0; width:100%; max-width:1100px; text-shadow:0 0 10px #a855f7;">VOID ARTIFACTS</h2>
         <div class="shop-grid" id="shop-artifacts"></div>
-        
-        <h2 style="color:#94a3b8; font-weight:bold; margin: 30px 0 10px 0; width:100%; max-width:1100px;">MODULES & TECH</h2>
+
+        <h2 id="titleModules" style="color:#94a3b8; font-weight:bold; margin: 30px 0 10px 0; width:100%; max-width:1100px;">MODULES & TECH</h2>
         <div class="shop-grid" id="shop-modules"></div>
     </div>
 </div>
 
 <script>
+/** --- LANGUAGE SYSTEM --- */
+var LANG = {
+    current: localStorage.getItem('game_lang') || 'en',
+    data: {
+        en: {
+            // UI Labels
+            wave: 'WAVE', coreLv: 'CORE Lv', scrap: 'SCRAP', essence: 'ESSENCE', ascension: 'ASCENSION',
+            auto: 'AUTO', start: 'START', resume: 'RESUME',
+            // Shop
+            shopTitle: 'SINGULARITY ENGINE', shopSubtitle: 'Spend Scrap & Void Essence.',
+            voidArtifacts: 'VOID ARTIFACTS', modulesTech: 'MODULES & TECH',
+            owned: 'OWNED', buy: 'BUY', unlock: 'UNLOCK',
+            // Skills
+            skillStun: 'Global Stun (Q)', skillRepair: 'Purify / Repair (R)', skillOmega: 'OMEGA BLAST (Requires Core Lv.4)',
+            // Buildings
+            core: 'Core', conduit: 'Conduit', titanium: 'Titanium', sentry: 'Sentry',
+            plasma: 'Plasma', stabilizer: 'Stabilizer', optimizer: 'Optimizer', fabricator: 'Fabricator',
+            droneHub: 'Drone Hub', anchor: 'Anchor', tesla: 'Tesla', vulcan: 'Vulcan',
+            sniper: 'Sniper', icbm: 'ICBM', railgun: 'Railgun', booster: 'Booster',
+            titanZeus: 'TITAN: ZEUS', titanOdin: 'TITAN: ODIN', titanVoid: 'TITAN: VOID', titanKronos: 'TITAN: KRONOS',
+            // Descriptions
+            descPowerLine: 'Power Line', descReflects: 'Reflects 30% Dmg', descFastFire: 'Fast Fire [Physical]',
+            descRegenShield: 'Regen Shield [Reflect]', descPreventsWeather: 'Prevents Weather Hazards (Rng 4)',
+            descAutoUpgrades: 'Auto-Upgrades Neighbors', descGeneratesScrap: 'Generates Scrap',
+            descGlobalMining: 'Global Mining', descPreventsRifts: 'Prevents Rifts (Range 4)',
+            descChainLightning: 'Chain Lightning [Energy]', descSpinUp: 'Spin-up [Physical]',
+            descAntiTank: 'Anti-Tank [Physical]', descGlobalNuke: 'Global Smart Nuke',
+            descInfinitePierce: 'Infinite Pierce [Energy]', descSpeedBuff: '+100% Speed Buff',
+            descMassiveChain: 'Massive Chain Lightning', descOrbitalRay: 'Orbital Death Ray [Cursor]',
+            descGravity: 'Pulls Enemies In (Gravity)', descSlowsBoosts: 'Slows Enemies / Boosts Towers',
+            // Artifacts
+            artifactLens: 'Infinity Lens', artifactPhase: 'Phase Engine', artifactGreed: 'Midas Hand',
+            artifactCrit: 'Void Sight', artifactRegen: 'Core Heart',
+            descLens: 'Railgun beam width +100%', descPhase: 'Drones Atk Spd +200% & Blink',
+            descGreed: 'Interest +10% per wave (Max 10k)', descCrit: 'All towers 20% crit chance (2x Dmg)',
+            descRegen: 'Core HP regen 1% per sec',
+            // Techs
+            techNano: 'Nanobots', techAI: 'Swarm AI', techOver: 'Overcharge', techReflect: 'Reactive Armor',
+            techLimit: 'Limit Break', techGate: 'STARGATE SEGMENT',
+            descNano: 'Walls & Shields regen HP', descAI: 'Drones move 2x faster', descOver: 'Energy Weapons deal +50% Dmg',
+            descReflect: 'Walls reflect 30% DMG', descLimit: 'Global DMG +5% (Infinite)',
+            descGate: 'Final Goal. Triggers Ascension.',
+            // Messages
+            msgNeedScrap: 'NEED SCRAP', msgSkillCD: 'SKILL ON COOLDOWN', msgRequiresCore: 'REQUIRES CORE LV.4',
+            msgEMPActivated: '⚡ EMP ACTIVATED!', msgNanoBurst: '✨ NANO-BURST!', msgOmegaBlast: '☢️ OMEGA BLAST!',
+            msgNoCorrupted: 'NO CORRUPTED BUILDINGS', msgSold: 'SOLD', msgOverdriveOn: 'OVERDRIVE ON (5 SCRAP/sec)',
+            msgOverdriveOff: 'OVERDRIVE OFF', msgWaveComplete: 'WAVE COMPLETE', msgInterest: 'INTEREST',
+            msgCoreUpgraded: 'CORE UPGRADED TO Lv.', msgCoreShield: 'CORE SHIELD ACTIVATED',
+            msgOmegaUnlocked: 'OMEGA SKILL UNLOCKED', msgAscensionStart: 'ASCENSION PROTOCOL INITIATED',
+            msgBlocked: 'BLOCKED', msgLocked: 'LOCKED', msgUpgraded: 'UPGRADED', msgCopied: 'COPIED',
+            msgNestSpawned: 'ENEMY NEST SPAWNED!', msgRiftDetected: 'VOID RIFT DETECTED!',
+            msgArtifactAcquired: 'ARTIFACT ACQUIRED!', msgHazardCleared: 'HAZARD CLEARED',
+            msgAscensionComplete: 'ASCENSION COMPLETE.', msgCoreDestroyed: 'CORE DESTROYED. Wave: ',
+            msgErased: 'ERASED.', msgCoreMax: 'CORE [MAX]', msgAutoOD: '[AUTO OD ON]',
+            // Hazards
+            hazardFlare: '⚠ SOLAR FLARE ⚠', hazardAcid: '⚠ ACID NEBULA ⚠', hazardGravity: '⚠ GRAVITY WELL ⚠',
+            // Core descriptions
+            coreAutoGun: 'Auto-Gun', coreRegenShield: 'Regen Shield', coreOmega: 'OMEGA BLAST', coreAscension: 'ASCENSION'
+        },
+        zh: {
+            // UI 标签
+            wave: '波次', coreLv: '核心等级', scrap: '废料', essence: '精华', ascension: '飞升',
+            auto: '自动', start: '开始', resume: '继续',
+            // 商店
+            shopTitle: '奇点引擎', shopSubtitle: '消耗废料和虚空精华',
+            voidArtifacts: '虚空神器', modulesTech: '模块与科技',
+            owned: '已拥有', buy: '购买', unlock: '解锁',
+            // 技能
+            skillStun: '全局眩晕 (Q)', skillRepair: '净化/修复 (R)', skillOmega: 'OMEGA冲击波 (需要核心4级)',
+            // 建筑
+            core: '核心', conduit: '导管', titanium: '钛墙', sentry: '哨兵炮',
+            plasma: '等离子盾', stabilizer: '稳定器', optimizer: '优化器', fabricator: '制造器',
+            droneHub: '无人机中枢', anchor: '锚点', tesla: '特斯拉塔', vulcan: '火神炮',
+            sniper: '狙击炮', icbm: '洲际导弹', railgun: '轨道炮', booster: '增幅器',
+            titanZeus: '泰坦：宙斯', titanOdin: '泰坦：奥丁', titanVoid: '泰坦：虚空', titanKronos: '泰坦：克洛诺斯',
+            // 描述
+            descPowerLine: '电力线路', descReflects: '反射30%伤害', descFastFire: '快速射击 [物理]',
+            descRegenShield: '再生护盾 [反射]', descPreventsWeather: '防止天气灾害 (范围4)',
+            descAutoUpgrades: '自动升级相邻建筑', descGeneratesScrap: '生成废料',
+            descGlobalMining: '全局采矿', descPreventsRifts: '防止虚空裂缝 (范围4)',
+            descChainLightning: '闪电链 [能量]', descSpinUp: '转速提升 [物理]',
+            descAntiTank: '反坦克 [物理]', descGlobalNuke: '全局智能核弹',
+            descInfinitePierce: '无限穿透 [能量]', descSpeedBuff: '攻速+100%',
+            descMassiveChain: '大范围闪电链', descOrbitalRay: '轨道死光 [光标]',
+            descGravity: '引力吸引敌人', descSlowsBoosts: '减速敌人/增强炮塔',
+            // 神器
+            artifactLens: '无限透镜', artifactPhase: '相位引擎', artifactGreed: '迈达斯之手',
+            artifactCrit: '虚空视界', artifactRegen: '核心之心',
+            descLens: '轨道炮光束宽度+100%', descPhase: '无人机攻速+200%且闪现',
+            descGreed: '每波利息+10% (上限1万)', descCrit: '所有炮塔20%暴击率(2倍伤害)',
+            descRegen: '核心生命每秒恢复1%',
+            // 科技
+            techNano: '纳米机器人', techAI: '蜂群AI', techOver: '过载充能', techReflect: '反应装甲',
+            techLimit: '突破极限', techGate: '星门碎片',
+            descNano: '墙和盾恢复生命', descAI: '无人机移速x2', descOver: '能量武器伤害+50%',
+            descReflect: '墙反射30%伤害', descLimit: '全局伤害+5% (无限)',
+            descGate: '最终目标。触发飞升。',
+            // 消息
+            msgNeedScrap: '需要更多废料', msgSkillCD: '技能冷却中', msgRequiresCore: '需要核心4级',
+            msgEMPActivated: '⚡ EMP已激活！', msgNanoBurst: '✨ 纳米爆发！', msgOmegaBlast: '☢️ OMEGA冲击波！',
+            msgNoCorrupted: '没有被封印的建筑', msgSold: '已出售', msgOverdriveOn: '过载开启 (5废料/秒)',
+            msgOverdriveOff: '过载关闭', msgWaveComplete: '波次完成', msgInterest: '利息',
+            msgCoreUpgraded: '核心已升至', msgCoreShield: '核心护盾已激活',
+            msgOmegaUnlocked: 'OMEGA技能已解锁', msgAscensionStart: '飞升协议已启动',
+            msgBlocked: '被阻挡', msgLocked: '未解锁', msgUpgraded: '已升级', msgCopied: '已复制',
+            msgNestSpawned: '敌人巢穴生成！', msgRiftDetected: '虚空裂缝检测到！',
+            msgArtifactAcquired: '神器已获得！', msgHazardCleared: '灾害已清除',
+            msgAscensionComplete: '飞升完成。', msgCoreDestroyed: '核心被摧毁。波次：',
+            msgErased: '已被抹除。', msgCoreMax: '核心 [最大]', msgAutoOD: '[自动过载开启]',
+            // 灾害
+            hazardFlare: '⚠ 太阳耀斑 ⚠', hazardAcid: '⚠ 酸雾星云 ⚠', hazardGravity: '⚠ 重力井 ⚠',
+            // 核心描述
+            coreAutoGun: '自动炮塔', coreRegenShield: '再生护盾', coreOmega: 'OMEGA冲击波', coreAscension: '飞升'
+        }
+    }
+};
+
+function t(key) { return LANG.data[LANG.current][key] || key; }
+
 /** --- CONFIGURATION --- */
 var CFG = {
-    W: 18, H: 10, SIZE: 48, 
+    W: 18, H: 10, SIZE: 48,
     OFF_X: 0, OFF_Y: 0,
     BASE_HP: 2000,
     START_SCRAP: 500,
@@ -322,6 +442,8 @@ function init() {
 
     updateLogic(); renderToolbar(); updateUI();
     document.getElementById('waveBtn').onclick = startWave;
+    document.getElementById('langBtn').innerText = LANG.current === 'en' ? 'EN' : '中文';
+    updateLanguage();
     loop();
 }
 
@@ -966,10 +1088,10 @@ function endWave() {
     let bonus = CFG.RUSH_BONUS; G.scrap += bonus;
     if(G.arts.GREED) {
         let interest = Math.min(10000, Math.floor(G.scrap * 0.1));
-        G.scrap += interest; showToast(`INTEREST: +${interest} SCRAP`);
+        G.scrap += interest; showToast(`${t('msgInterest')}: +${interest} ${t('scrap')}`);
     }
-    showToast(`WAVE ${G.wave-1} COMPLETE! +${bonus} SCRAP`);
-    document.getElementById('waveBtn').innerText = 'START';
+    showToast(`${t('wave')} ${G.wave-1} ${t('msgWaveComplete')}! +${bonus} ${t('scrap')}`);
+    document.getElementById('waveBtn').innerText = t('start');
     document.getElementById('waveBtn').classList.remove('btn-call');
     document.getElementById('shop-overlay').style.display = 'flex';
     updateShopUI(); updateUI();
@@ -1017,7 +1139,7 @@ function spawnNest() {
     if(tries < 50) {
         let types = ['BASIC', 'FAST', 'SAPPER', 'DISRUPTOR'];
         G.nests.push({ x: x, y: y, hp: 500, maxHp: 500, rate: 120, type: types[Math.floor(Math.random() * types.length)] });
-        showToast("ENEMY NEST SPAWNED!");
+        showToast(t('msgNestSpawned'));
     }
 }
 
@@ -1027,17 +1149,17 @@ function createExplosion(x, y, color, n) { explode(x, y, 50, 0, color); }
 window.useSkill = function(id) {
     let skill = SKILLS[id];
     if(!skill) return;
-    if(skill.active > 0) { showToast("SKILL ON COOLDOWN"); return; }
-    if(id === 'OMEGA' && G.coreLvl < 4) { showToast("REQUIRES CORE LV.4"); return; }
-    if(G.scrap < skill.cost) { showToast(`NEED ${skill.cost} SCRAP`); return; }
+    if(skill.active > 0) { showToast(t('msgSkillCD')); return; }
+    if(id === 'OMEGA' && G.coreLvl < 4) { showToast(t('msgRequiresCore')); return; }
+    if(G.scrap < skill.cost) { showToast(`${t('msgNeedScrap')}: ${skill.cost}`); return; }
     G.scrap -= skill.cost; skill.active = skill.cd;
-    if(id === 'STUN') { showToast("⚡ EMP ACTIVATED!"); G.shake = 15; addPart(CFG.W*CFG.SIZE/2 + CFG.OFF_X, CFG.H*CFG.SIZE/2 + CFG.OFF_Y, '#38bdf8', 30); }
+    if(id === 'STUN') { showToast(t('msgEMPActivated')); G.shake = 15; addPart(CFG.W*CFG.SIZE/2 + CFG.OFF_X, CFG.H*CFG.SIZE/2 + CFG.OFF_Y, '#38bdf8', 30); }
     else if(id === 'REPAIR') {
-        showToast("✨ NANO-BURST!"); let count = 0;
+        showToast(t('msgNanoBurst')); let count = 0;
         for(let x=0; x<CFG.W; x++) { for(let y=0; y<CFG.H; y++) { let c = G.grid[x][y]; if(c && c.corrupted) { c.corrupted = false; c.color = c.def.color; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); count++; } } }
-        if(count === 0) showToast("NO CORRUPTED BUILDINGS");
+        if(count === 0) showToast(t('msgNoCorrupted'));
     } else if(id === 'OMEGA') {
-        showToast("☢️ OMEGA BLAST!"); G.shake = 30; let core = getClosestCore();
+        showToast(t('msgOmegaBlast')); G.shake = 30; let core = getClosestCore();
         if(core) { explode(core.x, core.y, 400, 500, '#fbbf24'); getEnemiesInRadius(core.x, core.y, 400).forEach(e => { dmgEnemy(e, 500); }); }
     }
     updateUI(); updateSkillUI();
@@ -1058,11 +1180,49 @@ function onRightClick(e) {
         let refund = Math.floor(c.def.cost * 0.5); G.scrap += refund;
         if(c.def.size === 2) { for(let dx=0; dx<2; dx++) { for(let dy=0; dy<2; dy++) { if(c.x+dx < CFG.W && c.y+dy < CFG.H) G.grid[c.x+dx][c.y+dy] = null; } } }
         else G.grid[x][y] = null;
-        updateLogic(); updateUI(); showToast(`SOLD: +${refund} SCRAP`);
+        updateLogic(); updateUI(); showToast(`${t('msgSold')}: +${refund} ${t('scrap')}`);
     } else if(c && G.phase === 'BATTLE') {
         let key = `${x},${y}`;
-        if(G.autoOverdriveMap[key]) { delete G.autoOverdriveMap[key]; showToast("OVERDRIVE OFF"); }
-        else { G.autoOverdriveMap[key] = true; showToast("OVERDRIVE ON (5 SCRAP/sec)"); }
+        if(G.autoOverdriveMap[key]) { delete G.autoOverdriveMap[key]; showToast(t('msgOverdriveOff')); }
+        else { G.autoOverdriveMap[key] = true; showToast(t('msgOverdriveOn')); }
+    }
+}
+
+// === LANGUAGE TOGGLE SYSTEM ===
+function toggleLanguage() {
+    LANG.current = LANG.current === 'en' ? 'zh' : 'en';
+    localStorage.setItem('game_lang', LANG.current);
+    document.getElementById('langBtn').innerText = LANG.current === 'en' ? 'EN' : '中文';
+    updateLanguage();
+}
+
+function updateLanguage() {
+    // Update static UI labels
+    document.getElementById('labelWave').innerText = t('wave');
+    document.getElementById('labelCoreLv').innerText = t('coreLv');
+    document.getElementById('labelScrap').innerText = t('scrap');
+    document.getElementById('labelEssence').innerText = t('essence');
+    document.getElementById('labelAscension').innerText = t('ascension');
+    document.getElementById('autoLabel').innerText = t('auto');
+    if(G.phase === 'PREPARE') document.getElementById('waveBtn').innerText = t('start');
+
+    // Update shop UI
+    document.getElementById('shopTitle').innerText = t('shopTitle');
+    document.getElementById('shopSubtitle').innerText = t('shopSubtitle');
+    document.getElementById('labelShopEssence').innerText = t('essence');
+    document.getElementById('labelShopScrap').innerText = t('scrap');
+    document.getElementById('btnResume').innerText = t('resume');
+    document.getElementById('titleArtifacts').innerText = t('voidArtifacts');
+    document.getElementById('titleModules').innerText = t('modulesTech');
+
+    // Update skill tooltips
+    document.getElementById('skillStun').title = t('skillStun');
+    document.getElementById('skillRepair').title = t('skillRepair');
+    document.getElementById('skillOmega').title = t('skillOmega');
+
+    // Re-render shop to update text
+    if(document.getElementById('shop-overlay').style.display === 'flex') {
+        updateShopUI();
     }
 }
 
