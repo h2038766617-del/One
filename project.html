@@ -232,6 +232,7 @@ var LANG = {
             msgArtifactAcquired: 'ARTIFACT ACQUIRED!', msgHazardCleared: 'HAZARD CLEARED',
             msgAscensionComplete: 'ASCENSION COMPLETE.', msgCoreDestroyed: 'CORE DESTROYED. Wave: ',
             msgErased: 'ERASED.', msgCoreMax: 'CORE [MAX]', msgAutoOD: '[AUTO OD ON]',
+            msgSealed: 'SEALED!', msgEnraged: 'ENRAGED!',
             // Hazards
             hazardFlare: '⚠ SOLAR FLARE ⚠', hazardAcid: '⚠ ACID NEBULA ⚠', hazardGravity: '⚠ GRAVITY WELL ⚠',
             // Core descriptions
@@ -292,6 +293,7 @@ var LANG = {
             msgArtifactAcquired: '神器已获得！', msgHazardCleared: '灾害已清除',
             msgAscensionComplete: '飞升完成。', msgCoreDestroyed: '核心被摧毁。波次：',
             msgErased: '已被抹除。', msgCoreMax: '核心 [最大]', msgAutoOD: '[自动过载开启]',
+            msgSealed: '已封印！', msgEnraged: '已狂暴！',
             // 灾害
             hazardFlare: '⚠ 太阳耀斑 ⚠', hazardAcid: '⚠ 酸雾星云 ⚠', hazardGravity: '⚠ 重力井 ⚠',
             // 核心描述
@@ -538,11 +540,16 @@ function onResize() {
 
 function genTerrain() {
     for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) {
-        if(x>5 && x<10 && y>3 && y<6) continue; 
+        if(x>5 && x<10 && y>3 && y<6) continue;
         let r = Math.random();
         if(r < 0.15) { G.terrain[x][y] = TYPES.ORE; G.oreHp[`${x},${y}`] = 100; }
         else if(r < 0.35) G.terrain[x][y] = TYPES.VOID;
     }
+
+    // Place initial CORE at center of cleared area
+    let coreX = 7, coreY = 4;
+    let coreDef = MODULES.CORE;
+    G.grid[coreX][coreY] = { ...coreDef, x: coreX, y: coreY, cd: 0, hp: coreDef.hp, maxHp: coreDef.hp, shield: 0, maxShield: 0, lvl: 1 };
 }
 
 function handleCopy(e) {
@@ -664,13 +671,13 @@ function battleStep() {
         G.hazard = Math.floor(Math.random()*3)+1;
         G.hazardTimer = 1200; // 20s
         hw.style.display = 'block';
-        hw.innerText = G.hazard===1 ? "⚠ SOLAR FLARE ⚠" : (G.hazard===2 ? "⚠ ACID NEBULA ⚠" : "⚠ GRAVITY WELL ⚠");
+        hw.innerText = G.hazard===1 ? t('hazardFlare') : (G.hazard===2 ? t('hazardAcid') : t('hazardGravity'));
     }
 
     if(G.ascensionTimer > 0) {
         G.ascensionTimer--;
         document.getElementById('ascension-timer').innerText = (G.ascensionTimer / 60).toFixed(2);
-        if(G.ascensionTimer <= 0) { G.phase = 'GAMEOVER'; alert("ASCENSION COMPLETE."); window.location.reload(); }
+        if(G.ascensionTimer <= 0) { G.phase = 'GAMEOVER'; alert(t('msgAscensionComplete')); window.location.reload(); }
         if(G.frame%10===0) spawnEnemy('FAST'); if(G.frame%30===0) spawnEnemy('FLYER'); if(G.frame%100===0) spawnEnemy('TANK'); if(G.frame%150===0) spawnEnemy('SAPPER'); if(G.frame%600===0) spawnEnemy('BOSS'); if(G.frame%120===0) openRift(); if(G.frame%900===0) spawnEnemy('ERASER'); if(G.frame%400===0) spawnEnemy('STALKER'); if(G.frame%500===0) spawnEnemy('CORRUPTOR');
     } else {
         if(G.frame % 40 === 0 && G.spawnQ.length > 0) spawnEnemy(G.spawnQ.shift());
@@ -698,17 +705,17 @@ function updateUnits() {
              let gx=Math.floor((e.x-CFG.OFF_X)/CFG.SIZE), gy=Math.floor((e.y-CFG.OFF_Y)/CFG.SIZE);
              let c = getStructureAt(gx,gy);
              if(c && c.type!=='source' && !c.corrupted) {
-                 c.corrupted = true; c.color = '#a855f7'; addFloatingText("SEALED!", e.x, e.y, "#a855f7"); createExplosion(e.x, e.y, '#a855f7', 10); killEnemy(i); continue;
+                 c.corrupted = true; c.color = '#a855f7'; addFloatingText(t('msgSealed'), e.x, e.y, "#a855f7"); createExplosion(e.x, e.y, '#a855f7', 10); killEnemy(i); continue;
              }
         }
         if(e.isEraser) {
             let gx=Math.floor((e.x-CFG.OFF_X)/CFG.SIZE), gy=Math.floor((e.y-CFG.OFF_Y)/CFG.SIZE);
             if(gx>=0 && gx<CFG.W && gy>=0 && gy<CFG.H) {
                 let c = getStructureAt(gx,gy);
-                if(c) { if(c.type === 'source') { G.phase='GAMEOVER'; alert("ERASED."); window.location.reload(); } damageTile(c.x, c.y, 20000); createExplosion(e.x, e.y, '#000', 10); }
+                if(c) { if(c.type === 'source') { G.phase='GAMEOVER'; alert(t('msgErased')); window.location.reload(); } damageTile(c.x, c.y, 20000); createExplosion(e.x, e.y, '#000', 10); }
             }
         }
-        if(e.boss && !e.bossPhase && e.hp < e.mhp * 0.5) { e.bossPhase = true; e.spd *= 2; e.r *= 1.2; e.col = '#f00'; addFloatingText("ENRAGED!", e.x, e.y - 30, "#ef4444"); }
+        if(e.boss && !e.bossPhase && e.hp < e.mhp * 0.5) { e.bossPhase = true; e.spd *= 2; e.r *= 1.2; e.col = '#f00'; addFloatingText(t('msgEnraged'), e.x, e.y - 30, "#ef4444"); }
         
         let move = getMove(e);
         let spd = e.speed * (G.hazard===3 ? 2 : 1);
@@ -914,10 +921,10 @@ function fireRail(p, ang, dmg, rng=1200, width=5) {
 function explode(x, y, r, dmg, col) { for(let i=0; i<10; i++) addPart(x, y, col, 4); if(dmg > 0) { getEnemiesInRadius(x, y, r).forEach(e => dmgEnemy(e, dmg)); } }
 function dmgEnemy(e, amt) { if(e.type==='PHANTOM' && amt.type==='physical') amt *= 0.5; if(e.type==='TANK' && amt.type==='energy') amt *= 0.5; if(e.mut.includes('SHIELD') && e.shields > 0) { e.shields--; addPart(e.x, e.y, '#0ea5e9', 5); return; } e.hp -= amt; if(e.hp <= 0 && G.enemies.includes(e)) { killEnemy(e); } }
 function killEnemy(e) { let idx = G.enemies.indexOf(e); G.enemies.splice(idx, 1); if(G.parts.length < 150) addPart(e.x, e.y, e.col, 8); if(e.mut.includes('SPLIT') && e.r > 10) { for(let i=0; i<2; i++) { G.enemies.push({ x: e.x + (Math.random()-0.5)*10, y: e.y + (Math.random()-0.5)*10, r: e.r * 0.7, hp: e.mhp * 0.4, mhp: e.mhp * 0.4, spd: e.spd * 1.2, dmg: e.dmg * 0.6, col: e.col, mut: [], fly: e.fly }); } } if(e.isDisruptor) { G.deadZones.push({ x: e.x, y: e.y, r: 80, life: 600 }); explode(e.x, e.y, 80, 0, '#555'); } let s = (e.boss?100:5) + (G.wave * (G.infinite?2:0)); G.scrap += s; if(e.boss){ G.essence += 2; } updateUI(); }
-function damageTile(x, y, amt) { let c = G.grid[x][y]; if(!c) return; let maxHp = c.maxHp * Math.pow(1.5, (c.lvl||1)-1); let maxShield = c.maxShield * Math.pow(1.5, (c.lvl||1)-1); if(c.shield > 0) { c.shield -= amt; addPart(getCell(x,y).x, getCell(x,y).y, '#8b5cf6', 3); if(c.shield < 0) { c.hp += c.shield; c.shield = 0; } } else { c.hp -= amt; } if(c.hp <= 0) { if(c.type === 'source') { G.phase='GAMEOVER'; alert("CORE DESTROYED. Wave: "+G.wave); window.location.reload(); } G.grid[x][y] = null; if(c.def.size===2) { for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++) if(x+dx<CFG.W && y+dy<CFG.H) G.grid[x+dx][y+dy]=null; } updateLogic(); G.shake = 10; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); } }
+function damageTile(x, y, amt) { let c = G.grid[x][y]; if(!c) return; let maxHp = c.maxHp * Math.pow(1.5, (c.lvl||1)-1); let maxShield = c.maxShield * Math.pow(1.5, (c.lvl||1)-1); if(c.shield > 0) { c.shield -= amt; addPart(getCell(x,y).x, getCell(x,y).y, '#8b5cf6', 3); if(c.shield < 0) { c.hp += c.shield; c.shield = 0; } } else { c.hp -= amt; } if(c.hp <= 0) { if(c.type === 'source') { G.phase='GAMEOVER'; alert(t('msgCoreDestroyed')+G.wave); window.location.reload(); } G.grid[x][y] = null; if(c.def.size===2) { for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++) if(x+dx<CFG.W && y+dy<CFG.H) G.grid[x+dx][y+dy]=null; } updateLogic(); G.shake = 10; addPart(getCell(x,y).x, getCell(x,y).y, '#fff', 10); } }
 function regen() { for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) { let c = G.grid[x][y]; if(!c) continue; let maxShield = c.maxShield * Math.pow(1.5, (c.lvl||1)-1); let maxHp = c.maxHp * Math.pow(1.5, (c.lvl||1)-1); if(c.id==='SHIELD' && c.shield<maxShield) c.shield += 20; if(G.tech.NANO && c.type==='wall' && c.hp<maxHp) c.hp += 10; } }
 function getTarget(c, p, range) { let candidates = getEnemiesInRadius(p.x, p.y, range); if(candidates.length === 0) return null; let mode = c.targetMode || 'NEAR'; if(mode === 'NEAR') return candidates.reduce((a,b) => dist(a,p) < dist(b,p) ? a : b); else if(mode === 'STRONG') return candidates.reduce((a,b) => a.hp > b.hp ? a : b); else if(mode === 'WEAK') return candidates.reduce((a,b) => a.hp < b.hp ? a : b); }
-function calcPaths() { G.path = Array(CFG.W).fill().map(()=>Array(CFG.H).fill(9999)); let q = []; G.grid.forEach((col, x) => col.forEach((c, y) => { if(c && c.type==='source') { G.path[x][y]=0; q.push({x,y,d:0}); } })); while(q.length) { let {x,y,d} = q.shift(); [[0,1],[0,-1],[1,0],[-1,0]].forEach(dir => { let nx=x+d[0], ny=y+d[1]; if(nx>=0 && nx<CFG.W && ny>=0 && ny<CFG.H) { let c = G.grid[nx][ny]; let t = G.terrain[nx][ny]; let blocked = (c && c.type!=='source') || t===TYPES.ORE || t===TYPES.VOID; if(!blocked && G.path[nx][ny] > d+1) { G.path[nx][ny] = d+1; q.push({x:nx, y:ny, d:d+1}); } } }); } }
+function calcPaths() { G.path = Array(CFG.W).fill().map(()=>Array(CFG.H).fill(9999)); let q = []; G.grid.forEach((col, x) => col.forEach((c, y) => { if(c && c.type==='source') { G.path[x][y]=0; q.push({x,y,d:0}); } })); while(q.length) { let {x,y,d} = q.shift(); [[0,1],[0,-1],[1,0],[-1,0]].forEach(dir => { let nx=x+dir[0], ny=y+dir[1]; if(nx>=0 && nx<CFG.W && ny>=0 && ny<CFG.H) { let c = G.grid[nx][ny]; let t = G.terrain[nx][ny]; let blocked = (c && c.type!=='source') || t===TYPES.ORE || t===TYPES.VOID; if(!blocked && G.path[nx][ny] > d+1) { G.path[nx][ny] = d+1; q.push({x:nx, y:ny, d:d+1}); } } }); } }
 function getMove(e) { if(e.fly) { let core = getClosestCore(); if(core) { let ang = Math.atan2(core.y-e.y, core.x-e.x); return {x:Math.cos(ang), y:Math.sin(ang)}; } return {x:-1,y:0}; } let gx = Math.floor((e.x-CFG.OFF_X)/CFG.SIZE); let gy = Math.floor((e.y-CFG.OFF_Y)/CFG.SIZE); if(gx<0 || gx>=CFG.W) return {x:-1, y:0}; let best = 9999, move = {x:0, y:0}, found = false; [[0,1],[0,-1],[1,0],[-1,0]].forEach(d => { let nx=gx+d[0], ny=gy+d[1]; if(nx>=0 && nx<CFG.W && ny>=0 && ny<CFG.H) { if(G.path[nx][ny] < best) { best=G.path[nx][ny]; move={x:d[0], y:d[1]}; found=true; } } }); if(found && best < 9000) return move; return {x:-1, y:0}; }
 function getClosestCore() { for(let x=0; x<CFG.W; x++) for(let y=0; y<CFG.H; y++) if(G.grid[x][y]?.type==='source') return getCell(x,y); return null; }
 function getCell(x,y) { return {x: x*CFG.SIZE + CFG.OFF_X + CFG.SIZE/2, y: y*CFG.SIZE + CFG.OFF_Y + CFG.SIZE/2}; }
